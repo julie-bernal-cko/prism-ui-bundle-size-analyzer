@@ -25,17 +25,22 @@ async function run(): Promise<void> {
     })
 
     const filteredResult = result.bundles.map(bundle => {
-      return {
-        bundleName: cleanUpFileName(bundle.bundleName),
-        totalBytes: bundle.totalBytes,
-        formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
-      }
+      return `| File name| Bytes|
+      | --- | --- |
+      | ${cleanUpFileName(bundle.bundleName)} | ${BytesToKiloBytes(
+        bundle.totalBytes
+      )} |
+      `
+      //   bundleName: cleanUpFileName(bundle.bundleName),
+      //   formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
+      // }
     })
+
     const {context} = github
     octokit.issues.createComment({
       ...context.repo,
       issue_number: context.payload.pull_request?.number || -1,
-      body: JSON.stringify(filteredResult, null, 2)
+      body: JSON.stringify(filteredResult)
     })
 
     core.setOutput('directory', filteredResult)

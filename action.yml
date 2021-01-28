@@ -2,6 +2,9 @@ name: 'Prism Ui bundle size analyzer'
 description: 'Script to compare bundle size of prism ui when pushing to dev branch.'
 author: 'Julie Bernal'
 inputs:
+  GITHUB_TOKEN:
+    description: 'Github token of the repository (automatically created by Github)'
+    required: true
   directory: # change this
     required: true
     description: 'directory we want to analyze'

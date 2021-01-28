@@ -1,11 +1,11 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Prism Ui bundle size analyzer'
+description: 'Script to compare bundle size of prism ui when pushing to dev branch.'
+author: 'Julie Bernal'
 inputs:
-  milliseconds: # change this
+  directory: # change this
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'directory we want to analyze'
+    default: ''
 runs:
   using: 'node12'
   main: 'dist/index.js'

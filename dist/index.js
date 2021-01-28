@@ -71,14 +71,16 @@ function run() {
                 output: { format: 'json' }
             });
             const filteredResult = result.bundles.map(bundle => {
-                return {
-                    bundleName: cleanUpFileName(bundle.bundleName),
-                    totalBytes: bundle.totalBytes,
-                    formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
-                };
+                return `| File name| Bytes|
+      | --- | --- |
+      | ${cleanUpFileName(bundle.bundleName)} | ${BytesToKiloBytes(bundle.totalBytes)} |
+      `;
+                //   bundleName: cleanUpFileName(bundle.bundleName),
+                //   formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
+                // }
             });
             const { context } = github;
-            octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: JSON.stringify(filteredResult, null, 2) }));
+            octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: JSON.stringify(filteredResult) }));
             core.setOutput('directory', filteredResult);
         }
         catch (error) {

@@ -62,13 +62,6 @@ const BytesToKiloBytes = (bytes) => {
 };
 const tableHeader = `| File name| Bytes|
 | --- | --- |`;
-// let tableRow = ''
-// for (let i = 0; i < mockData.length; i++) {
-//   tableRow = `${tableRow}
-// | ${mockData[i].bundleName} | ${mockData[i].totalBytes} |`
-// }
-// const table = `${tableHeader} ${tableRow}`
-// console.log(table)
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -89,7 +82,7 @@ function run() {
             // eslint-disable-next-line @typescript-eslint/prefer-for-of
             for (let i = 0; i < filteredResult.length; i++) {
                 tableRow = `${tableRow}
-    | ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`;
+| ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`;
             }
             const table = `${tableHeader} ${tableRow}`;
             const { context } = github;

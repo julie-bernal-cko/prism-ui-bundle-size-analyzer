@@ -60,6 +60,15 @@ const BytesToKiloBytes = (bytes) => {
         return `${bytes} ${sizes[i]}`;
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
 };
+const tableHeader = `| File name| Bytes|
+| --- | --- |`;
+// let tableRow = ''
+// for (let i = 0; i < mockData.length; i++) {
+//   tableRow = `${tableRow}
+// | ${mockData[i].bundleName} | ${mockData[i].totalBytes} |`
+// }
+// const table = `${tableHeader} ${tableRow}`
+// console.log(table)
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -71,16 +80,20 @@ function run() {
                 output: { format: 'json' }
             });
             const filteredResult = result.bundles.map(bundle => {
-                return `| File name| Bytes|
-      | --- | --- |
-      | ${cleanUpFileName(bundle.bundleName)} | ${BytesToKiloBytes(bundle.totalBytes)} |
-      `;
-                //   bundleName: cleanUpFileName(bundle.bundleName),
-                //   formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
-                // }
+                return {
+                    bundleName: cleanUpFileName(bundle.bundleName),
+                    formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
+                };
             });
+            let tableRow = '';
+            // eslint-disable-next-line @typescript-eslint/prefer-for-of
+            for (let i = 0; i < filteredResult.length; i++) {
+                tableRow = `${tableRow}
+    | ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`;
+            }
+            const table = `${tableHeader} ${tableRow}`;
             const { context } = github;
-            octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: JSON.stringify(filteredResult) }));
+            octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: table }));
             core.setOutput('directory', filteredResult);
         }
         catch (error) {

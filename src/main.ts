@@ -18,16 +18,6 @@ const BytesToKiloBytes = (bytes: any): any => {
 const tableHeader = `| File name| Bytes|
 | --- | --- |`
 
-// let tableRow = ''
-// for (let i = 0; i < mockData.length; i++) {
-//   tableRow = `${tableRow}
-// | ${mockData[i].bundleName} | ${mockData[i].totalBytes} |`
-// }
-
-// const table = `${tableHeader} ${tableRow}`
-
-// console.log(table)
-
 async function run(): Promise<void> {
   try {
     const github_token = core.getInput('GITHUB_TOKEN', {required: true})
@@ -48,7 +38,7 @@ async function run(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < filteredResult.length; i++) {
       tableRow = `${tableRow}
-    | ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`
+| ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`
     }
 
     const table = `${tableHeader} ${tableRow}`

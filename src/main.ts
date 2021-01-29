@@ -15,6 +15,19 @@ const BytesToKiloBytes = (bytes: any): any => {
   return `${(bytes / 1024 ** i).toFixed(1)} ${sizes[i]}`
 }
 
+const tableHeader = `| File name| Bytes|
+| --- | --- |`
+
+// let tableRow = ''
+// for (let i = 0; i < mockData.length; i++) {
+//   tableRow = `${tableRow}
+// | ${mockData[i].bundleName} | ${mockData[i].totalBytes} |`
+// }
+
+// const table = `${tableHeader} ${tableRow}`
+
+// console.log(table)
+
 async function run(): Promise<void> {
   try {
     const github_token = core.getInput('GITHUB_TOKEN', {required: true})
@@ -25,22 +38,26 @@ async function run(): Promise<void> {
     })
 
     const filteredResult = result.bundles.map(bundle => {
-      return `| File name| Bytes|
-      | --- | --- |
-      | ${cleanUpFileName(bundle.bundleName)} | ${BytesToKiloBytes(
-        bundle.totalBytes
-      )} |
-      `
-      //   bundleName: cleanUpFileName(bundle.bundleName),
-      //   formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
-      // }
+      return {
+        bundleName: cleanUpFileName(bundle.bundleName),
+        formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
+      }
     })
+
+    let tableRow = ''
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < filteredResult.length; i++) {
+      tableRow = `${tableRow}
+    | ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`
+    }
+
+    const table = `${tableHeader} ${tableRow}`
 
     const {context} = github
     octokit.issues.createComment({
       ...context.repo,
       issue_number: context.payload.pull_request?.number || -1,
-      body: JSON.stringify(filteredResult)
+      body: table
     })
 
     core.setOutput('directory', filteredResult)

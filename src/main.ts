@@ -84,7 +84,7 @@ async function run(): Promise<void> {
       if (filteredResult) {
         const remote = `https://${process.env.GITHUB_ACTOR}:${github_token}@github.com/${process.env.GITHUB_REPOSITORY}.git`
 
-        await exec('git config http.sslVerify false')
+        await exec('git config  http.sslVerify "false"')
         await exec('git config --local user.name "bundleSize"')
         await exec('git config --local user.email "bundleSize@bot.com"')
         await exec('git add ./bundle-size')

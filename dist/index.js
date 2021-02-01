@@ -116,7 +116,7 @@ function run() {
                 octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: newTable }));
                 if (filteredResult) {
                     const remote = `https://${process.env.GITHUB_ACTOR}:${github_token}@github.com/${process.env.GITHUB_REPOSITORY}.git`;
-                    yield exec('git config http.sslVerify false');
+                    yield exec('git config  http.sslVerify "false"');
                     yield exec('git config --local user.name "bundleSize"');
                     yield exec('git config --local user.email "bundleSize@bot.com"');
                     yield exec('git add ./bundle-size');

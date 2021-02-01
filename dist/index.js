@@ -43,11 +43,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const core = __importStar(__webpack_require__(2186));
 const source_map_explorer_1 = __webpack_require__(7965);
 const github = __importStar(__webpack_require__(5438));
+const util_1 = __webpack_require__(1669);
+const child_process_1 = __importDefault(__webpack_require__(3129));
+const fs_1 = __importDefault(__webpack_require__(5747));
+const markdown_table_1 = __importDefault(__webpack_require__(1062));
+const exec = util_1.promisify(child_process_1.default.exec);
 const cleanUpFileName = (filePath) => {
     return filePath.replace(/^.*(\\|\/|:)/, '');
 };
@@ -60,8 +68,6 @@ const BytesToKiloBytes = (bytes) => {
         return `${bytes} ${sizes[i]}`;
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
 };
-const tableHeader = `| File name| Bytes|
-| --- | --- |`;
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -78,16 +84,47 @@ function run() {
                     formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
                 };
             });
-            let tableRow = '';
-            // eslint-disable-next-line @typescript-eslint/prefer-for-of
-            for (let i = 0; i < filteredResult.length; i++) {
-                tableRow = `${tableRow}
-| ${filteredResult[i].bundleName} | ${filteredResult[i].formattedTotalBytes} |`;
+            const getCoverageFile = () => {
+                try {
+                    return JSON.parse(fs_1.default.readFileSync('./bundle-size.json', 'utf8'));
+                }
+                catch (e) {
+                    console.log('no bundle size file found');
+                    return undefined;
+                }
+            };
+            yield exec(`git checkout -f ${process.env.GITHUB_BASE_REF} `);
+            const baseCoverage = getCoverageFile();
+            yield exec(`git checkout -f ${process.env.GITHUB_HEAD_REF}`);
+            const generateTable = (base, compare) => {
+                return markdown_table_1.default([
+                    ['Package name', 'old bundle size(Bytes)', 'new bundle size(Bytes)'],
+                    base.map((results) => {
+                        const comparisonBundleSize = compare.find((item) => item.bundleName === results.bundleName).formattedTotalBytes;
+                        return [
+                            `${results.bundleName}%`,
+                            `${results.formattedTotalBytes}%`,
+                            `${comparisonBundleSize}%`,
+                            `${(results.formattedTotalBytes - comparisonBundleSize).toFixed(2)}%`
+                        ];
+                    })
+                ]);
+            };
+            if (baseCoverage) {
+                const newTable = generateTable(baseCoverage, filteredResult);
+                const { context } = github;
+                octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: newTable }));
+                if (filteredResult) {
+                    const remote = `https://${process.env.GITHUB_ACTOR}:${github_token}@github.com/${process.env.GITHUB_REPOSITORY}.git`;
+                    yield exec('git config http.sslVerify false');
+                    yield exec('git config --local user.name "bundleSize"');
+                    yield exec('git config --local user.email "bundleSize@bot.com"');
+                    yield exec('git add ./bundle-size');
+                    yield exec('git commit -m "Updating bundle size"');
+                    yield exec(`git push "${remote}" HEAD:"${process.env.GITHUB_HEAD_REF}"`);
+                }
+                core.setOutput('time', new Date().toTimeString());
             }
-            const table = `${tableHeader} ${tableRow}`;
-            const { context } = github;
-            octokit.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || -1, body: table }));
-            core.setOutput('directory', filteredResult);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -43679,6 +43716,263 @@ module.exports.default = macosRelease;
 
 /***/ }),
 
+/***/ 1062:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var repeat = __webpack_require__(6976)
+
+module.exports = markdownTable
+
+var trailingWhitespace = / +$/
+
+// Characters.
+var space = ' '
+var lineFeed = '\n'
+var dash = '-'
+var colon = ':'
+var verticalBar = '|'
+
+var x = 0
+var C = 67
+var L = 76
+var R = 82
+var c = 99
+var l = 108
+var r = 114
+
+// Create a table from a matrix of strings.
+function markdownTable(table, options) {
+  var settings = options || {}
+  var padding = settings.padding !== false
+  var start = settings.delimiterStart !== false
+  var end = settings.delimiterEnd !== false
+  var align = (settings.align || []).concat()
+  var alignDelimiters = settings.alignDelimiters !== false
+  var alignments = []
+  var stringLength = settings.stringLength || defaultStringLength
+  var rowIndex = -1
+  var rowLength = table.length
+  var cellMatrix = []
+  var sizeMatrix = []
+  var row = []
+  var sizes = []
+  var longestCellByColumn = []
+  var mostCellsPerRow = 0
+  var cells
+  var columnIndex
+  var columnLength
+  var largest
+  var size
+  var cell
+  var lines
+  var line
+  var before
+  var after
+  var code
+
+  // This is a superfluous loop if we don’t align delimiters, but otherwise we’d
+  // do superfluous work when aligning, so optimize for aligning.
+  while (++rowIndex < rowLength) {
+    cells = table[rowIndex]
+    columnIndex = -1
+    columnLength = cells.length
+    row = []
+    sizes = []
+
+    if (columnLength > mostCellsPerRow) {
+      mostCellsPerRow = columnLength
+    }
+
+    while (++columnIndex < columnLength) {
+      cell = serialize(cells[columnIndex])
+
+      if (alignDelimiters === true) {
+        size = stringLength(cell)
+        sizes[columnIndex] = size
+
+        largest = longestCellByColumn[columnIndex]
+
+        if (largest === undefined || size > largest) {
+          longestCellByColumn[columnIndex] = size
+        }
+      }
+
+      row.push(cell)
+    }
+
+    cellMatrix[rowIndex] = row
+    sizeMatrix[rowIndex] = sizes
+  }
+
+  // Figure out which alignments to use.
+  columnIndex = -1
+  columnLength = mostCellsPerRow
+
+  if (typeof align === 'object' && 'length' in align) {
+    while (++columnIndex < columnLength) {
+      alignments[columnIndex] = toAlignment(align[columnIndex])
+    }
+  } else {
+    code = toAlignment(align)
+
+    while (++columnIndex < columnLength) {
+      alignments[columnIndex] = code
+    }
+  }
+
+  // Inject the alignment row.
+  columnIndex = -1
+  columnLength = mostCellsPerRow
+  row = []
+  sizes = []
+
+  while (++columnIndex < columnLength) {
+    code = alignments[columnIndex]
+    before = ''
+    after = ''
+
+    if (code === l) {
+      before = colon
+    } else if (code === r) {
+      after = colon
+    } else if (code === c) {
+      before = colon
+      after = colon
+    }
+
+    // There *must* be at least one hyphen-minus in each alignment cell.
+    size = alignDelimiters
+      ? Math.max(
+          1,
+          longestCellByColumn[columnIndex] - before.length - after.length
+        )
+      : 1
+
+    cell = before + repeat(dash, size) + after
+
+    if (alignDelimiters === true) {
+      size = before.length + size + after.length
+
+      if (size > longestCellByColumn[columnIndex]) {
+        longestCellByColumn[columnIndex] = size
+      }
+
+      sizes[columnIndex] = size
+    }
+
+    row[columnIndex] = cell
+  }
+
+  // Inject the alignment row.
+  cellMatrix.splice(1, 0, row)
+  sizeMatrix.splice(1, 0, sizes)
+
+  rowIndex = -1
+  rowLength = cellMatrix.length
+  lines = []
+
+  while (++rowIndex < rowLength) {
+    row = cellMatrix[rowIndex]
+    sizes = sizeMatrix[rowIndex]
+    columnIndex = -1
+    columnLength = mostCellsPerRow
+    line = []
+
+    while (++columnIndex < columnLength) {
+      cell = row[columnIndex] || ''
+      before = ''
+      after = ''
+
+      if (alignDelimiters === true) {
+        size = longestCellByColumn[columnIndex] - (sizes[columnIndex] || 0)
+        code = alignments[columnIndex]
+
+        if (code === r) {
+          before = repeat(space, size)
+        } else if (code === c) {
+          if (size % 2 === 0) {
+            before = repeat(space, size / 2)
+            after = before
+          } else {
+            before = repeat(space, size / 2 + 0.5)
+            after = repeat(space, size / 2 - 0.5)
+          }
+        } else {
+          after = repeat(space, size)
+        }
+      }
+
+      if (start === true && columnIndex === 0) {
+        line.push(verticalBar)
+      }
+
+      if (
+        padding === true &&
+        // Don’t add the opening space if we’re not aligning and the cell is
+        // empty: there will be a closing space.
+        !(alignDelimiters === false && cell === '') &&
+        (start === true || columnIndex !== 0)
+      ) {
+        line.push(space)
+      }
+
+      if (alignDelimiters === true) {
+        line.push(before)
+      }
+
+      line.push(cell)
+
+      if (alignDelimiters === true) {
+        line.push(after)
+      }
+
+      if (padding === true) {
+        line.push(space)
+      }
+
+      if (end === true || columnIndex !== columnLength - 1) {
+        line.push(verticalBar)
+      }
+    }
+
+    line = line.join('')
+
+    if (end === false) {
+      line = line.replace(trailingWhitespace, '')
+    }
+
+    lines.push(line)
+  }
+
+  return lines.join(lineFeed)
+}
+
+function serialize(value) {
+  return value === null || value === undefined ? '' : String(value)
+}
+
+function defaultStringLength(value) {
+  return value.length
+}
+
+function toAlignment(value) {
+  var code = typeof value === 'string' ? value.charCodeAt(0) : x
+
+  return code === L || code === l
+    ? l
+    : code === R || code === r
+    ? r
+    : code === C || code === c
+    ? c
+    : x
+}
+
+
+/***/ }),
+
 /***/ 3973:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -46839,6 +47133,84 @@ var pump = function () {
 }
 
 module.exports = pump
+
+
+/***/ }),
+
+/***/ 6976:
+/***/ ((module) => {
+
+"use strict";
+/*!
+ * repeat-string <https://github.com/jonschlinkert/repeat-string>
+ *
+ * Copyright (c) 2014-2015, Jon Schlinkert.
+ * Licensed under the MIT License.
+ */
+
+
+
+/**
+ * Results cache
+ */
+
+var res = '';
+var cache;
+
+/**
+ * Expose `repeat`
+ */
+
+module.exports = repeat;
+
+/**
+ * Repeat the given `string` the specified `number`
+ * of times.
+ *
+ * **Example:**
+ *
+ * ```js
+ * var repeat = require('repeat-string');
+ * repeat('A', 5);
+ * //=> AAAAA
+ * ```
+ *
+ * @param {String} `string` The string to repeat
+ * @param {Number} `number` The number of times to repeat the string
+ * @return {String} Repeated string
+ * @api public
+ */
+
+function repeat(str, num) {
+  if (typeof str !== 'string') {
+    throw new TypeError('expected a string');
+  }
+
+  // cover common, quick use cases
+  if (num === 1) return str;
+  if (num === 2) return str + str;
+
+  var max = str.length * num;
+  if (cache !== str || typeof cache === 'undefined') {
+    cache = str;
+    res = '';
+  } else if (res.length >= max) {
+    return res.substr(0, max);
+  }
+
+  while (max > res.length && num > 1) {
+    if (num & 1) {
+      res += str;
+    }
+
+    num >>= 1;
+    str += str;
+  }
+
+  res += str;
+  res = res.substr(0, max);
+  return res;
+}
 
 
 /***/ }),

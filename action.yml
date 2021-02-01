@@ -9,6 +9,11 @@ inputs:
     required: true
     description: 'directory we want to analyze'
     default: ''
+
+    
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
+
+  

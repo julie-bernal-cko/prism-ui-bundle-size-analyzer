@@ -128,8 +128,9 @@ async function run(): Promise<void> {
     // } else {
     //   console.log('no bundle size found')
     // }
+    console.log('compare', compareBundleSize)
 
-    await uploadFile(process.env.GITHUB_BASE_REF!, compareBundleSize)
+    // await uploadFile(process.env.GITHUB_BASE_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     core.setFailed(error.message)

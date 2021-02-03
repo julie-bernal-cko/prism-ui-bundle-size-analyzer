@@ -68,18 +68,26 @@ const download = async (branch: string): Promise<any> => {
   })
 }
 
-const generateTable = (base: any, compare: any): any => {
+export const generateTable = (base: any, compare: any): any => {
   return table([
-    ['Package name', 'old bundle size(Bytes)', 'new bundle size(Bytes)'],
-    base.map((results: any) => {
+    [
+      'Package name',
+      'old bundle size(Bytes)',
+      'new bundle size(Bytes)',
+      'other'
+    ],
+    ...base.map((results: any) => {
       const comparisonBundleSize = compare.find(
         (item: any) => item.bundleName === results.bundleName
-      ).formattedTotalBytes
+      ).totalBytes
+      console.log('comparisonBundleSize', comparisonBundleSize)
       return [
-        `${results.bundleName}%`,
-        `${results.formattedTotalBytes}%`,
-        `${comparisonBundleSize}%`,
-        `${(results.formattedTotalBytes - comparisonBundleSize).toFixed(2)}%`
+        `${cleanUpFileName(results.bundleName)}`,
+        `${BytesToKiloBytes(results.totalBytes)}`,
+        `${BytesToKiloBytes(comparisonBundleSize)}`,
+        `${BytesToKiloBytes(
+          (results.totalBytes - comparisonBundleSize).toFixed(2)
+        )}`
       ]
     })
   ])
@@ -96,40 +104,40 @@ async function run(): Promise<void> {
 
     const compareBundleSize = result.bundles.map(bundle => {
       return {
-        bundleName: cleanUpFileName(bundle.bundleName),
-        formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
+        bundleName: bundle.bundleName,
+        totalBytes: bundle.totalBytes
       }
     })
 
-    const baseBundleSize = await download(
-      process.env.GITHUB_BASE_REF!
-      // eslint-disable-next-line github/no-then
-    ).catch(err => console.log(err))
+    // const baseBundleSize = await download(
+    //   process.env.GITHUB_BASE_REF!
+    //   // eslint-disable-next-line github/no-then
+    // ).catch(err => console.log(err))
 
-    const {context} = github
+    // const {context} = github
 
-    const pullRequest = context.payload.pull_request
+    // const pullRequest = context.payload.pull_request
 
-    if (pullRequest == null) {
-      core.setFailed('No pull request found.')
-      return
-    }
+    // if (pullRequest == null) {
+    //   core.setFailed('No pull request found.')
+    //   return
+    // }
 
-    const pull_request_number = pullRequest.number
+    // const pull_request_number = pullRequest.number
 
-    if (baseBundleSize) {
-      const newTable = generateTable(baseBundleSize, compareBundleSize)
+    // if (baseBundleSize) {
+    //   const newTable = generateTable(baseBundleSize, compareBundleSize)
 
-      await octokit.issues.createComment({
-        ...context.repo,
-        issue_number: pull_request_number,
-        body: newTable
-      })
-    } else {
-      console.log('no bundle size found')
-    }
+    //   await octokit.issues.createComment({
+    //     ...context.repo,
+    //     issue_number: pull_request_number,
+    //     body: newTable
+    //   })
+    // } else {
+    //   console.log('no bundle size found')
+    // }
 
-    await uploadFile(process.env.GITHUB_HEAD_REF!, compareBundleSize)
+    await uploadFile(process.env.GITHUB_BASE_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     core.setFailed(error.message)

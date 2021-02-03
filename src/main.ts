@@ -13,7 +13,7 @@ const cleanUpFileName = (filePath: string): string => {
 
 const BytesToKiloBytes = (bytes: any): any => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  if (bytes === 0) return 'n/a'
+  if (bytes === 0) return 'no difference'
   const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)) as any, 10)
   if (i === 0) return `${bytes} ${sizes[i]}`
   return `${(bytes / 1024 ** i).toFixed(1)} ${sizes[i]}`
@@ -67,20 +67,17 @@ export const generateTable = (base: any, compare: any): any => {
       'Package name',
       'old bundle size(Bytes)',
       'new bundle size(Bytes)',
-      'other'
+      'Diff'
     ],
     ...base.map((results: any) => {
       const comparisonBundleSize = compare.find(
         (item: any) => item.bundleName === results.bundleName
       ).totalBytes
-      console.log('comparisonBundleSize', comparisonBundleSize)
       return [
         `${cleanUpFileName(results.bundleName)}`,
         `${BytesToKiloBytes(results.totalBytes)}`,
         `${BytesToKiloBytes(comparisonBundleSize)}`,
-        `${BytesToKiloBytes(
-          (results.totalBytes - comparisonBundleSize).toFixed(2)
-        )}`
+        `${BytesToKiloBytes(results.totalBytes - comparisonBundleSize)}`
       ]
     })
   ])

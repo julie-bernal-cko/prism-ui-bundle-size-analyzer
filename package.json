@@ -28,6 +28,7 @@
     "@actions/core": "^1.2.6",
     "@actions/github": "^2.1.1",
     "@types/markdown-table": "^2.0.0",
+    "aws-sdk": "^2.835.0",
     "markdown-table": "^2.0.0",
     "source-map-explorer": "^2.5.2"
   },

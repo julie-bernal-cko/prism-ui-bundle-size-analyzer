@@ -26,15 +26,16 @@ const BytesToKiloBytes = (bytes: any): any => {
   return `${(bytes / 1024 ** i).toFixed(1)} ${sizes[i]}`
 }
 
-const uploadFile = async (branch: string, filePath: string): Promise<any> => {
-  const readStream = fs.createReadStream(filePath)
-
+const uploadFile = async (
+  branch: string,
+  compareBundleSize: any
+): Promise<any> => {
   return new Promise<S3.ManagedUpload.SendData>((resolve, reject) => {
     s3.upload(
       {
         Bucket: 'cko-prism-frontend',
         Key: `checks/${branch}/bundle-size.json`,
-        Body: readStream
+        Body: JSON.stringify(compareBundleSize)
       },
       (err: any, data: any) => {
         if (err) {
@@ -67,6 +68,23 @@ const download = async (branch: string): Promise<any> => {
   })
 }
 
+const generateTable = (base: any, compare: any): any => {
+  return table([
+    ['Package name', 'old bundle size(Bytes)', 'new bundle size(Bytes)'],
+    base.map((results: any) => {
+      const comparisonBundleSize = compare.find(
+        (item: any) => item.bundleName === results.bundleName
+      ).formattedTotalBytes
+      return [
+        `${results.bundleName}%`,
+        `${results.formattedTotalBytes}%`,
+        `${comparisonBundleSize}%`,
+        `${(results.formattedTotalBytes - comparisonBundleSize).toFixed(2)}%`
+      ]
+    })
+  ])
+}
+
 async function run(): Promise<void> {
   try {
     const github_token = core.getInput('GITHUB_TOKEN', {required: true})
@@ -76,84 +94,42 @@ async function run(): Promise<void> {
       output: {format: 'json'}
     })
 
-    const filteredResult = result.bundles.map(bundle => {
+    const compareBundleSize = result.bundles.map(bundle => {
       return {
         bundleName: cleanUpFileName(bundle.bundleName),
         formattedTotalBytes: BytesToKiloBytes(bundle.totalBytes)
       }
     })
 
-    const getBundleSizeFile = (): any => {
-      try {
-        return JSON.parse(fs.readFileSync('./bundle-size.json', 'utf8'))
-      } catch (e) {
-        console.log('no bundle size file found')
-        return undefined
-      }
-    }
+    // const baseBundleSize = await download(
+    //   process.env.GITHUB_BASE_REF!
+    //   // eslint-disable-next-line github/no-then
+    // ).catch(err => console.log(err))
 
-    const createBundleSizeFile = (): any => {
-      const data = JSON.stringify(filteredResult)
-      try {
-        return fs.writeFileSync('./bundle-size.json', data)
-      } catch (e) {
-        console.log(e, 'cannot create file')
-        return undefined
-      }
-    }
+    // const {context} = github
 
-    const baseBundleSize = await download(
-      process.env.GITHUB_BASE_REF!
-    ).catch(err => console.log(err))
+    // const pullRequest = context.payload.pull_request
 
-    const generateTable = (base: any, compare: any): any => {
-      return table([
-        ['Package name', 'old bundle size(Bytes)', 'new bundle size(Bytes)'],
-        base.map((results: any) => {
-          const comparisonBundleSize = compare.find(
-            (item: any) => item.bundleName === results.bundleName
-          ).formattedTotalBytes
-          return [
-            `${results.bundleName}%`,
-            `${results.formattedTotalBytes}%`,
-            `${comparisonBundleSize}%`,
-            `${(results.formattedTotalBytes - comparisonBundleSize).toFixed(
-              2
-            )}%`
-          ]
-        })
-      ])
-    }
+    // if (pullRequest == null) {
+    //   core.setFailed('No pull request found.')
+    //   return
+    // }
 
-    const {context} = github
+    // const pull_request_number = pullRequest.number
 
-    const pullRequest = context.payload.pull_request
+    // if (baseBundleSize) {
+    //   const newTable = generateTable(baseBundleSize, compareBundleSize)
 
-    if (pullRequest == null) {
-      core.setFailed('No pull request found.')
-      return
-    }
+    //   await octokit.issues.createComment({
+    //     ...context.repo,
+    //     issue_number: pull_request_number,
+    //     body: newTable
+    //   })
+    // } else {
+    //   console.log('no bundle size found')
+    // }
 
-    const pull_request_number = pullRequest.number
-
-    createBundleSizeFile()
-
-    if (baseBundleSize) {
-      const newTable = generateTable(baseBundleSize, getBundleSizeFile())
-
-      await octokit.issues.createComment({
-        ...context.repo,
-        issue_number: pull_request_number,
-        body: newTable
-      })
-    } else {
-      console.log('no bundle size found')
-    }
-
-    await uploadFile(
-      process.env.GITHUB_BASE_REF!,
-      'bundle-size-compare/bundle-size.json'
-    )
+    await uploadFile(process.env.GITHUB_BASE_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     core.setFailed(error.message)

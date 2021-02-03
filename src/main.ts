@@ -102,8 +102,6 @@ async function run(): Promise<void> {
       }
     }
 
-    const compareBundleSize = getBundleSizeFile()
-
     const baseBundleSize = await download(
       process.env.GITHUB_BASE_REF!
     ).catch(err => console.log(err))
@@ -141,7 +139,7 @@ async function run(): Promise<void> {
     createBundleSizeFile()
 
     if (baseBundleSize) {
-      const newTable = generateTable(baseBundleSize, filteredResult)
+      const newTable = generateTable(baseBundleSize, getBundleSizeFile())
 
       await octokit.issues.createComment({
         ...context.repo,
@@ -153,7 +151,7 @@ async function run(): Promise<void> {
     }
 
     await uploadFile(
-      process.env.GITHUB_HEAD_REF!,
+      process.env.GITHUB_BASE_REF!,
       'bundle-size-compare/bundle-size.json'
     )
     core.setOutput('time', new Date().toTimeString())

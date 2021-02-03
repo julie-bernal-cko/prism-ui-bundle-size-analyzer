@@ -101,35 +101,35 @@ async function run(): Promise<void> {
       }
     })
 
-    // const baseBundleSize = await download(
-    //   process.env.GITHUB_BASE_REF!
-    //   // eslint-disable-next-line github/no-then
-    // ).catch(err => console.log(err))
+    const baseBundleSize = await download(
+      process.env.GITHUB_BASE_REF!
+      // eslint-disable-next-line github/no-then
+    ).catch(err => console.log(err))
 
-    // const {context} = github
+    const {context} = github
 
-    // const pullRequest = context.payload.pull_request
+    const pullRequest = context.payload.pull_request
 
-    // if (pullRequest == null) {
-    //   core.setFailed('No pull request found.')
-    //   return
-    // }
+    if (pullRequest == null) {
+      core.setFailed('No pull request found.')
+      return
+    }
 
-    // const pull_request_number = pullRequest.number
+    const pull_request_number = pullRequest.number
 
-    // if (baseBundleSize) {
-    //   const newTable = generateTable(baseBundleSize, compareBundleSize)
+    if (baseBundleSize) {
+      const newTable = generateTable(baseBundleSize, compareBundleSize)
 
-    //   await octokit.issues.createComment({
-    //     ...context.repo,
-    //     issue_number: pull_request_number,
-    //     body: newTable
-    //   })
-    // } else {
-    //   console.log('no bundle size found')
-    // }
+      await octokit.issues.createComment({
+        ...context.repo,
+        issue_number: pull_request_number,
+        body: newTable
+      })
+    } else {
+      console.log('no bundle size found')
+    }
 
-    await uploadFile(process.env.GITHUB_BASE_REF!, compareBundleSize)
+    await uploadFile(process.env.GITHUB_HEAD_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     core.setFailed(error.message)

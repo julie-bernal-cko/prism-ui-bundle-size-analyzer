@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as core from '@actions/core'
 import {explore} from 'source-map-explorer'
 import * as github from '@actions/github'
@@ -11,26 +10,33 @@ const cleanUpFileName = (filePath: string): string => {
   return filePath.replace(/^.*(\\|\/|:)/, '')
 }
 
-const BytesToKiloBytes = (bytes: any): any => {
+export const BytesToKiloBytes = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   if (bytes === 0) return 'no difference'
-  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)) as any, 10)
+  const i: number = parseInt(
+    Math.floor(Math.log(bytes) / Math.log(1024)).toString()
+  )
   if (i === 0) return `${bytes} ${sizes[i]}`
-  return `${(bytes / 1024 ** i).toFixed(1)} ${sizes[i]}`
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
+}
+
+interface Result {
+  bundleName: string
+  totalBytes: number
 }
 
 const uploadFile = async (
   branch: string,
-  compareBundleSize: any
-): Promise<any> => {
-  return new Promise<S3.ManagedUpload.SendData>((resolve, reject) => {
+  compareBundleSize: Result[]
+): Promise<S3.ManagedUpload.SendData> => {
+  return new Promise((resolve, reject) => {
     s3.upload(
       {
         Bucket: 'cko-prism-frontend',
         Key: `checks/${branch}/bundle-size.json`,
         Body: JSON.stringify(compareBundleSize)
       },
-      (err: any, data: any) => {
+      (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -41,14 +47,14 @@ const uploadFile = async (
   })
 }
 
-const download = async (branch: string): Promise<any> => {
-  return new Promise<any>((resolve, reject) => {
+const download = async <T>(branch: string): Promise<T> => {
+  return new Promise((resolve, reject) => {
     s3.getObject(
       {
         Bucket: 'cko-prism-frontend',
         Key: `checks/${branch}/bundle-size.json`
       },
-      (err: any, data: any) => {
+      (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -61,7 +67,10 @@ const download = async (branch: string): Promise<any> => {
   })
 }
 
-export const generateTable = (base: any, compare: any): any => {
+export const generateCompareBundleSizeTable = (
+  base: Result[],
+  compare: Result[]
+): string => {
   return table([
     [
       'Package name',
@@ -69,15 +78,36 @@ export const generateTable = (base: any, compare: any): any => {
       'new bundle size(Bytes)',
       'Diff'
     ],
-    ...base.map((results: any) => {
-      const comparisonBundleSize = compare.find(
-        (item: any) => item.bundleName === results.bundleName
-      ).totalBytes
+    ...base.map(results => {
+      const comparisonBundle = compare.find(item => {
+        return item.bundleName === results.bundleName
+      })
+      if (comparisonBundle === undefined) {
+        return [
+          `${cleanUpFileName(results.bundleName)}`,
+          `${BytesToKiloBytes(results.totalBytes)}`,
+          `No bundle found`,
+          `N/A`
+        ]
+      }
+
       return [
         `${cleanUpFileName(results.bundleName)}`,
         `${BytesToKiloBytes(results.totalBytes)}`,
-        `${BytesToKiloBytes(comparisonBundleSize)}`,
-        `${BytesToKiloBytes(results.totalBytes - comparisonBundleSize)}`
+        `${BytesToKiloBytes(comparisonBundle.totalBytes)}`,
+        `${BytesToKiloBytes(results.totalBytes - comparisonBundle.totalBytes)}`
+      ]
+    })
+  ])
+}
+
+const generateNewBundleSizeTable = (compare: Result[]): string => {
+  return table([
+    ['Package name', 'bundle size(Bytes)'],
+    ...compare.map(results => {
+      return [
+        `${cleanUpFileName(results.bundleName)}`,
+        `${BytesToKiloBytes(results.totalBytes)}`
       ]
     })
   ])
@@ -99,10 +129,10 @@ async function run(): Promise<void> {
       }
     })
 
-    const baseBundleSize = await download(
+    const baseBundleSize = await download<Result[]>(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       process.env.GITHUB_BASE_REF!
-      // eslint-disable-next-line github/no-then
-    ).catch(err => console.log(err))
+    )
 
     const {context} = github
 
@@ -115,17 +145,15 @@ async function run(): Promise<void> {
 
     const pull_request_number = pullRequest.number
 
-    if (baseBundleSize) {
-      const newTable = generateTable(baseBundleSize, compareBundleSize)
+    const newTable = baseBundleSize
+      ? generateCompareBundleSizeTable(baseBundleSize, compareBundleSize)
+      : generateNewBundleSizeTable(compareBundleSize)
 
-      await octokit.issues.createComment({
-        ...context.repo,
-        issue_number: pull_request_number,
-        body: newTable
-      })
-    } else {
-      console.log('no bundle size found')
-    }
+    await octokit.issues.createComment({
+      ...context.repo,
+      issue_number: pull_request_number,
+      body: newTable
+    })
 
     await uploadFile(process.env.GITHUB_HEAD_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())

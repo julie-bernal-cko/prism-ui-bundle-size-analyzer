@@ -6,8 +6,8 @@ import {S3} from 'aws-sdk'
 
 const s3 = new S3()
 
-const cleanUpFileName = (filePath: string): string => {
-  return filePath.replace(/^.*(\\|\/|:)/, '')
+export const cleanUpFileName = (filePath: string): string => {
+  return filePath.replace(/^.*(\\|\/|:)/, '').split('.')[0]
 }
 
 export const BytesToKiloBytes = (bytes: number): string => {
@@ -73,6 +73,7 @@ export const generateCompareBundleSizeTable = (
 ): string => {
   return table([
     [
+      'Status',
       'Package name',
       'old bundle size(Bytes)',
       'new bundle size(Bytes)',
@@ -82,6 +83,7 @@ export const generateCompareBundleSizeTable = (
       const comparisonBundle = compare.find(item => {
         return item.bundleName === results.bundleName
       })
+
       if (comparisonBundle === undefined) {
         return [
           `${cleanUpFileName(results.bundleName)}`,
@@ -91,7 +93,21 @@ export const generateCompareBundleSizeTable = (
         ]
       }
 
+      //  base.name is in base and compare.name is in compare -
+      // only base.name ❌
+      //only compare.name ✅'
+
+      const getSymbol = (): string => {
+        if (!cleanUpFileName(results.bundleName)) {
+          return '❌'
+        } else if (comparisonBundle) {
+          return '-'
+        }
+        return '✅'
+      }
+
       return [
+        `${getSymbol()}`,
         `${cleanUpFileName(results.bundleName)}`,
         `${BytesToKiloBytes(results.totalBytes)}`,
         `${BytesToKiloBytes(comparisonBundle.totalBytes)}`,

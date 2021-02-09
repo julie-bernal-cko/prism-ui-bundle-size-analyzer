@@ -20,7 +20,7 @@ export const BytesToKiloBytes = (bytes: number): string => {
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
 }
 
-interface Result {
+export interface Result {
   bundleName: string
   totalBytes: number
 }
@@ -67,10 +67,30 @@ const download = async <T>(branch: string): Promise<T> => {
   })
 }
 
+//get list of delete files
+//get list of new files
+// get list of current files
+
+export const generateTable = (data: any) => {
+  console.log('data', data)
+  return table([
+    [
+      'Status',
+      'Package name',
+      'old bundle size(Bytes)',
+      'new bundle size(Bytes)',
+      'Diff'
+    ]
+  ])
+}
+
 export const generateCompareBundleSizeTable = (
   base: Result[],
   compare: Result[]
 ): string => {
+  console.log('base', base.length)
+  console.log('compare', compare.length)
+
   return table([
     [
       'Status',
@@ -79,13 +99,14 @@ export const generateCompareBundleSizeTable = (
       'new bundle size(Bytes)',
       'Diff'
     ],
-    ...base.map(results => {
+    ...compare.map(results => {
       const comparisonBundle = compare.find(item => {
         return item.bundleName === results.bundleName
       })
 
       if (comparisonBundle === undefined) {
         return [
+          '✅',
           `${cleanUpFileName(results.bundleName)}`,
           `${BytesToKiloBytes(results.totalBytes)}`,
           `No bundle found`,
@@ -99,11 +120,11 @@ export const generateCompareBundleSizeTable = (
 
       const getSymbol = (): string => {
         if (!cleanUpFileName(results.bundleName)) {
-          return '❌'
+          return `Delete`
         } else if (comparisonBundle) {
           return '-'
         }
-        return '✅'
+        return `Added`
       }
 
       return [

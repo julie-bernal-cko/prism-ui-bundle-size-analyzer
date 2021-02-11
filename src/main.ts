@@ -143,8 +143,8 @@ async function run(): Promise<void> {
     const pull_request_number = pullRequest.number
 
     const transformedData = transformFilesList(
-      baseBundleSize,
-      compareBundleSize
+      compareBundleSize,
+      baseBundleSize
     )
 
     const newTable = baseBundleSize

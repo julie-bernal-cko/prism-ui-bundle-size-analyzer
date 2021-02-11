@@ -34,7 +34,7 @@ const transformedData = [
 describe('generate Table', () => {
   it('should generate table in the right format', () => {
     expect(generateCompareBundleSizeTable(transformedData))
-      .toEqual(`| Status | Package name             | Old bundle size(Bytes) | ew bundle size(Bytes) | Diff          |
+      .toEqual(`| Status | Package name             | Old bundle size(Bytes) | New bundle size(Bytes) | Diff          |
 | ------ | ------------------------ | ---------------------- | --------------------- | ------------- |
 | ↔️     | cat.9c5b6189.chunk.js    | 53.0 KB                | 53.0 KB               | no difference |
 | ↔️     | parrot.9c5b6189.chunk.js | 53.0 KB                | 3.4 KB                | - 49.6 KB     |

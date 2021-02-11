@@ -91,7 +91,7 @@ export const generateCompareBundleSizeTable = (data: BundleInformation[]) => {
       'Status',
       'Package name',
       'Old bundle size(Bytes)',
-      'ew bundle size(Bytes)',
+      'New bundle size(Bytes)',
       'Diff'
     ],
     ...mappedData

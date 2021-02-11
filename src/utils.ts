@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import {Result} from './main'
+import {Result, BundleInformation} from './main'
 
 export const cleanUpFileName = (filePath: string): string => {
   return filePath.replace(/^.*(\\|\/|:)/, '')
@@ -20,19 +18,31 @@ export const BytesToKiloBytes = (bytes: number): string => {
   ).toFixed(1)} ${sizes[i]}`
 }
 
-export const findNewFiles = (newData: Result[], oldData: Result[]) => {
+export const findNewFiles = (
+  newData: Result[],
+  oldData: Result[]
+): Result[] => {
   return newData.filter(newDataItem => {
     return !oldData.some(oldDataItem => {
-      return oldDataItem.bundleName === newDataItem.bundleName
+      return (
+        oldDataItem.bundleName.split('.')[0] ===
+        newDataItem.bundleName.split('.')[0]
+      )
     })
   })
 }
 
-export const findDeletedFiles = (oldData: Result[], newData: Result[]) => {
+export const findDeletedFiles = (
+  oldData: Result[],
+  newData: Result[]
+): Result[] => {
   return findNewFiles(oldData, newData)
 }
 
-export const transformFilesList = (newData: Result[], oldData: Result[]) => {
+export const transformFilesList = (
+  newData: Result[],
+  oldData: Result[]
+): BundleInformation[] => {
   if (!oldData.length) {
     return newData.map(item => {
       return {
@@ -80,6 +90,5 @@ export const transformFilesList = (newData: Result[], oldData: Result[]) => {
     }
   })
   const mergedFiles = [...files, ...deletedFiles]
-  console.log(mergedFiles)
   return mergedFiles
 }

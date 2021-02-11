@@ -18,6 +18,10 @@ export const BytesToKiloBytes = (bytes: number): string => {
   ).toFixed(1)} ${sizes[i]}`
 }
 
+const getFileName = (fileName: string): string => {
+  return fileName.split('.')[0]
+}
+
 export const findNewFiles = (
   newData: Result[],
   oldData: Result[]
@@ -25,8 +29,8 @@ export const findNewFiles = (
   return newData.filter(newDataItem => {
     return !oldData.some(oldDataItem => {
       return (
-        oldDataItem.bundleName.split('.')[0] ===
-        newDataItem.bundleName.split('.')[0]
+        getFileName(oldDataItem.bundleName) ===
+        getFileName(newDataItem.bundleName)
       )
     })
   })
@@ -57,7 +61,9 @@ export const transformFilesList = (
   const newFiles = findNewFiles(newData, oldData)
   const deletedFiles = findDeletedFiles(oldData, newData).map(item => {
     const oldFile = oldData.find(oldFileItem => {
-      return oldFileItem.bundleName === item.bundleName
+      return (
+        getFileName(oldFileItem.bundleName) === getFileName(item.bundleName)
+      )
     })
     return {
       status: '❌',
@@ -70,11 +76,15 @@ export const transformFilesList = (
 
   const files = newData.map(item => {
     const isNewFile = newFiles.some(newFileItem => {
-      return item.bundleName === newFileItem.bundleName
+      return (
+        getFileName(item.bundleName) === getFileName(newFileItem.bundleName)
+      )
     })
 
     const oldFile = oldData.find(oldFileItem => {
-      return oldFileItem.bundleName === item.bundleName
+      return (
+        getFileName(oldFileItem.bundleName) === getFileName(item.bundleName)
+      )
     })
 
     return {

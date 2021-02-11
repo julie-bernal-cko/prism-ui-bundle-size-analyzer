@@ -5,6 +5,7 @@ import * as github from '@actions/github'
 import table from 'markdown-table'
 import {S3} from 'aws-sdk'
 import {transformFilesList} from './utils'
+import {countReset} from 'console'
 
 const s3 = new S3()
 
@@ -126,6 +127,9 @@ async function run(): Promise<void> {
       }
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    core.debug(`ATTEMPTING TO DOWNLOAD ${process.env.GITHUB_BASE_REF!}`)
+
     const baseBundleSize = await download<Result[]>(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       process.env.GITHUB_BASE_REF!
@@ -156,6 +160,8 @@ async function run(): Promise<void> {
       issue_number: pull_request_number,
       body: newTable
     })
+
+    core.debug(`ATTEMPTING TO UPLOAD ${process.env.GITHUB_HEAD_REF!}`)
 
     await uploadFile(process.env.GITHUB_HEAD_REF!, compareBundleSize)
     core.setOutput('time', new Date().toTimeString())

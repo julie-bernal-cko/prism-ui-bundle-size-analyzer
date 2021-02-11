@@ -140,10 +140,12 @@ async function run(): Promise<void> {
     const pullRequest = context.payload.pull_request
 
     if (pullRequest == null) {
-      core.setFailed('No pull request found.')
+      if (context.ref === 'refs/heads/master') {
+        core.debug(`ATTEMPTING TO Uploading master`)
+        await uploadFile('master', compareBundleSize)
+      }
       return
     }
-
     const pull_request_number = pullRequest.number
 
     const transformedData = transformFilesList(

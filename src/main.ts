@@ -130,11 +130,6 @@ async function run(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     core.debug(`ATTEMPTING TO DOWNLOAD ${process.env.GITHUB_BASE_REF!}`)
 
-    const baseBundleSize = await download<Result[]>(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      process.env.GITHUB_BASE_REF!
-    )
-
     const {context} = github
 
     const pullRequest = context.payload.pull_request
@@ -147,6 +142,11 @@ async function run(): Promise<void> {
       return
     }
     const pull_request_number = pullRequest.number
+
+    const baseBundleSize = await download<Result[]>(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      process.env.GITHUB_BASE_REF!
+    )
 
     const transformedData = transformFilesList(
       compareBundleSize,
